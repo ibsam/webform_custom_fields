@@ -1,0 +1,7 @@
+name: "Webform Custom Fields"
+type: module
+description: "A custom module to add custom fields to webforms."
+core_version_requirement: ^8 || ^9
+package: Custom
+dependencies: []
+version: 1.0

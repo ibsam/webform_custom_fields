@@ -1,0 +1,7 @@
+webform_custom_fields.content:
+  path: "/webform-custom-fields"
+  defaults:
+    _controller: '\Drupal\webform_custom_fields\Controller\WebformCustomFieldsController::content'
+    _title: "Webform Custom Fields Page"
+  requirements:
+    _permission: "access content"

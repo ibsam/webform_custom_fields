@@ -1,0 +1,117 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_alter().
+ */
+function webform_custom_fields_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if ($form_id == 'webform_settings_form' || $form_id == 'webform_add_form') {
+    $webform = $form_state->getFormObject()->getEntity();
+
+    $form['custom_field'] = [
+      '#type' => 'select',
+      '#title' => t('Allow for this form to be attached to a supported user or a profile tag'),
+      '#options' => [
+        'none' => t('None (admin area only)'),
+        'supported_user' => t('Supported user (profile entity)'),
+        'profile_tag' => t('Profile tag (profile tag entity)'),
+      ],
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'custom_field', 'none'),
+      '#weight' => -10,
+    ];
+
+    // Checkbox for who can submit this form
+    $form['conditional_checkboxes_submit'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Who can submit this form?*'),
+      '#options' => [
+        'supporters' => t('Supporters'),
+        'supported_users' => t('Supported users'),
+      ],
+      '#states' => [
+        'visible' => [
+          [':input[name="custom_field"]' => ['value' => 'supported_user']],
+        ],
+      ],
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_submit', []),
+      '#weight' => -9,
+    ];
+
+    // Checkbox for who can view results of this form
+    $form['conditional_checkboxes_view'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Who can view results of this form?*'),
+      '#options' => [
+        'supporters' => t('Supporters'),
+        'supported_users' => t('Supported users'),
+      ],
+      '#states' => [
+        'visible' => [
+          [':input[name="custom_field"]' => ['value' => 'supported_user']],
+          [':input[name="custom_field"]' => ['value' => 'profile_tag']],
+        ],
+      ],
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_view', []),
+      '#weight' => -8,
+    ];
+
+    // Checkbox for who can edit results of this form
+    $form['conditional_checkboxes_edit'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Who can edit results of this form?*'),
+      '#options' => [
+        'supporters' => t('Supporters'),
+        'supported_users' => t('Supported users'),
+      ],
+      '#states' => [
+        'visible' => [
+          [':input[name="custom_field"]' => ['value' => 'supported_user']],
+          [':input[name="custom_field"]' => ['value' => 'profile_tag']],
+        ],
+      ],
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_edit', []),
+      '#weight' => -7,
+    ];
+
+
+    $form['actions']['submit']['#submit'][] = 'webform_custom_fields_form_submit';
+  }
+}
+
+/**
+ * Custom submit handler for webform settings form.
+ */
+function webform_custom_fields_form_submit($form, FormStateInterface $form_state) {
+  $webform = $form_state->getFormObject()->getEntity();
+  $custom_field_value = $form_state->getValue('custom_field');
+  $conditional_checkboxes_submit_value = $form_state->getValue('conditional_checkboxes_submit');
+  $conditional_checkboxes_view_value = $form_state->getValue('conditional_checkboxes_view');
+  $conditional_checkboxes_edit_value = $form_state->getValue('conditional_checkboxes_edit');
+
+  // Save the custom field value and the conditional checkboxes values as third-party settings.
+  $webform->setThirdPartySetting('webform_custom_fields', 'custom_field', $custom_field_value);
+  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_submit', array_filter($conditional_checkboxes_submit_value));
+  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_view', array_filter($conditional_checkboxes_view_value));
+  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_edit', array_filter($conditional_checkboxes_edit_value));
+  $webform->save();
+}
+
+ 
+
+/**
+ * Implements hook_views_data().
+ */
+function webform_custom_fields_views_data() {
+  $data = [];
+
+  $data['webform_submission']['webform_custom_field'] = [
+    'title' => t('Custom Webform Field'),
+    'help' => t('Displays the custom field value from webform entities.'),
+    'field' => [
+      'id' => 'webform_custom_field',
+    ],
+  ];
+
+  return $data;
+}

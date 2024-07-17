@@ -1,0 +1,5 @@
+services:
+  webform_custom_fields.views.field.custom_field:
+    class: Drupal\webform_custom_fields\Plugin\views\field\CustomField
+    tags:
+      - { name: views.field, id: webform_custom_field }

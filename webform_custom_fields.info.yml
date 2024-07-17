@@ -1,7 +1,12 @@
 name: "Webform Custom Fields"
 type: module
-description: "A custom module to add custom fields to webforms."
+description: "Module developed by Here2There. Adds a custom text field to the Webform settings."
 core_version_requirement: ^8 || ^9
 package: Custom
-dependencies: []
-version: 1.0
+dependencies:
+  - drupal:webform
+fields:
+webform_custom_field:
+  label: "Webform Custom Field"
+  description: "Custom field added to the webform."
+  field_class: Drupal\webform_custom_fields\Plugin\views\field\WebformCustomField

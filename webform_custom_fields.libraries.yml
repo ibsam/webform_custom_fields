@@ -1,0 +1,8 @@
+custom_fields:
+  version: 1.x
+  js:
+    js/custom_fields.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings

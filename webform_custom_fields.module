@@ -9,7 +9,7 @@ function webform_custom_fields_form_alter(&$form, FormStateInterface $form_state
   if ($form_id == 'webform_settings_form' || $form_id == 'webform_add_form') {
     $webform = $form_state->getFormObject()->getEntity();
 
-     // Field 1: Allow for this form to be attached to a supported user profile
+    // Field 1: Allow for this form to be attached to a supported user profile
     $form['allow_supported_user_profile'] = [
       '#type' => 'checkbox',
       '#title' => t('Allow for this form to be attached to a supported user profile'),
@@ -17,78 +17,66 @@ function webform_custom_fields_form_alter(&$form, FormStateInterface $form_state
       '#weight' => -10,
     ];
 
-    // Field 2: Who can submit this form?
-    $form['who_can_submit'] = [
-      '#type' => 'checkboxes',
-      '#title' => t('Who can submit this form?*'),
+   $form['ib_check'] = [
+      '#type' => 'radios',
+      '#title' => t('ibrahim checking'), // Adjust title as needed
       '#options' => [
-        'admins' => t('Admins'),
-        'mentors' => t('Mentors'),
         'supporters' => t('Supporters'),
-        'supported_users' => t('Supported users'),
+        'supported_users' => t('Supported Users'),
       ],
-      '#default_value' => [
-        'admins' => 'admins',
-        'mentors' => 'mentors',
-      ],
-      '#disabled' =>  [
-          'admins' => TRUE,
-          'mentors' => TRUE,
-          'mentors' => FALSE,
-        ],
-      '#states' => [
-        'visible' => [
-          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#weight' => -9,
     ];
+
+    // Function to create checkboxes with some options checked and disabled
+    function create_checkbox_field($title, $name, $default_values, $weight) {
+      $field = [
+        '#type' => 'checkboxes',
+        '#title' => t($title),
+        '#options' => [
+          'admins' => t('Admins'),
+          'mentors' => t('Mentors'),
+          'supporters' => t('Supporters'),
+          'supported_users' => t('Supported users'),
+        ],
+        '#default_value' => $default_values,
+        '#states' => [
+          'visible' => [
+            ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
+          ],
+        ],
+        '#weight' => $weight,
+      ];
+      
+      // Disable specific options
+      foreach (['admins', 'mentors'] as $disabled_option) {
+        $field['#disabled_options'][$disabled_option] = TRUE;
+      }
+
+      return $field;
+    }
+
+    // Field 2: Who can submit this form?
+    $form['who_can_submit'] = create_checkbox_field(
+      'Who can submit this form?*',
+      'who_can_submit',
+      ['admins' => 'admins', 'mentors' => 'mentors'],
+      -9
+    );
 
     // Field 3: Who can view results of this form?
-    $form['who_can_view'] = [
-      '#type' => 'checkboxes',
-      '#title' => t('Who can view results of this form?*'),
-      '#options' => [
-        'admins' => t('Admins'),
-        'mentors' => t('Mentors'),
-        'supporters' => t('Supporters'),
-        'supported_users' => t('Supported users'),
-      ],
-      '#default_value' => [
-        'admins' => 'admins',
-        'mentors' => 'mentors',
-      ],
-      '#disabled' => TRUE,
-      '#states' => [
-        'visible' => [
-          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#weight' => -8,
-    ];
+    $form['who_can_view'] = create_checkbox_field(
+      'Who can view results of this form?*',
+      'who_can_view',
+      ['admins' => 'admins', 'mentors' => 'mentors'],
+      -8
+    );
 
     // Field 4: Who can edit results of this form?
-    $form['who_can_edit'] = [
-      '#type' => 'checkboxes',
-      '#title' => t('Who can edit results of this form?'),
-      '#options' => [
-        'admins' => t('Admins'),
-        'mentors' => t('Mentors'),
-        'supporters' => t('Supporters'),
-        'supported_users' => t('Supported users'),
-      ],
-      '#default_value' => [
-        'admins' => 'admins',
-        'mentors' => 'mentors',
-      ],
-      '#disabled' => TRUE,
-      '#states' => [
-        'visible' => [
-          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#weight' => -7,
-    ];
+    $form['who_can_edit'] = create_checkbox_field(
+      'Who can edit results of this form?',
+      'who_can_edit',
+      ['admins' => 'admins', 'mentors' => 'mentors'],
+      -7
+    );
 
     // Field 5: Restrict by profile tag
     $form['restrict_by_profile_tag'] = [
@@ -104,41 +92,72 @@ function webform_custom_fields_form_alter(&$form, FormStateInterface $form_state
     ];
 
     // Field 6: Select Profile tags
-    $form['select_profile_tags'] = [
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'profile_tag',
-      '#tags' => TRUE,
-      '#title' => t('Select Profile tags'),
-      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'select_profile_tags', []),
-      '#states' => [
-        'visible' => [
-          ':input[name="restrict_by_profile_tag"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#weight' => -5,
-    ];
+
 
     $form['actions']['submit']['#submit'][] = 'webform_custom_fields_form_submit';
-
-
-   }
+  }
 }
+
+
+/**
+ * Implements hook_preprocess_HOOK() for form elements.
+ */
+function webform_custom_fields_preprocess_form(&$variables) {
+  $element = $variables['element'];
+  if (isset($element['#id']) && ($element['#id'] == 'webform-settings-form' || $element['#id'] == 'webform-add-form')) {
+    $variables['#attached']['library'][] = 'webform_custom_fields/custom_fields';
+  }
+}
+
+
 
 /**
  * Custom submit handler for webform settings form.
  */
 function webform_custom_fields_form_submit($form, FormStateInterface $form_state) {
   $webform = $form_state->getFormObject()->getEntity();
-  $custom_field_value = $form_state->getValue('custom_field');
-  $conditional_checkboxes_submit_value = $form_state->getValue('conditional_checkboxes_submit');
-  $conditional_checkboxes_view_value = $form_state->getValue('conditional_checkboxes_view');
-  $conditional_checkboxes_edit_value = $form_state->getValue('conditional_checkboxes_edit');
 
-  // Save the custom field value and the conditional checkboxes values as third-party settings.
-  $webform->setThirdPartySetting('webform_custom_fields', 'custom_field', $custom_field_value);
-  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_submit', array_filter($conditional_checkboxes_submit_value));
-  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_view', array_filter($conditional_checkboxes_view_value));
-  $webform->setThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_edit', array_filter($conditional_checkboxes_edit_value));
+  // Save the custom fields
+  //$webform->setThirdPartySetting('webform_custom_fields', 'allow_supported_user_profile', $form_state->getValue('allow_supported_user_profile'));
+  
+  // Retrieve the values from the form state.
+  $allow_attach_profile = $form_state->getValue('allow_supported_user_profile');
+  $who_can_submit = array_filter($form_state->getValue('who_can_submit'));
+  $who_can_view = array_filter($form_state->getValue('who_can_view'));
+  $who_can_edit = array_filter($form_state->getValue('who_can_edit'));
+  $restrict_by_profile_tag = $form_state->getValue('restrict_by_profile_tag');
+
+$who_can_edit = "Admins,Mentors,Supporters";
+//$who_can_edit = explode(",", $who_can_edit);
+
+  $ib_check = $form_state->getValue('ib_check');
+  echo "<pre>";var_dump(
+          [
+            $ib_check,
+            $who_can_edit,
+            ]);//die;
+
+  // Log the values to ensure they are being captured correctly.
+  \Drupal::logger('webform_custom_fields')->debug('Saving values: allow_attach_profile: @allow_attach_profile, who_can_submit: @who_can_submit, who_can_view: @who_can_view, who_can_edit: @who_can_edit, restrict_by_profile_tag: @restrict_by_profile_tag, profile_tags: @profile_tags', [
+    '@allow_attach_profile' => $allow_attach_profile,
+    '@who_can_submit' => print_r($who_can_submit, TRUE),
+    '@who_can_view' => print_r($who_can_view, TRUE),
+    '@who_can_edit' => print_r($who_can_edit, TRUE),
+    '@restrict_by_profile_tag' => $restrict_by_profile_tag,
+    '@profile_tags' => print_r($profile_tags, TRUE),
+  ]);
+
+  // Save the values as third-party settings.
+  $webform->setThirdPartySetting('webform_custom_fields', 'allow_attach_profile', $allow_attach_profile);
+  $webform->setThirdPartySetting('webform_custom_fields', 'who_can_submit', $who_can_submit);
+  $webform->setThirdPartySetting('webform_custom_fields', 'who_can_view', $who_can_view);
+  $webform->setThirdPartySetting('webform_custom_fields', 'who_can_edit', $who_can_edit);
+  $webform->setThirdPartySetting('webform_custom_fields', 'restrict_by_profile_tag', $restrict_by_profile_tag);
+  //$webform->setThirdPartySetting('webform_custom_fields', 'profile_tags', $profile_tags);
+
+  //$webform->setThirdPartySetting('webform_custom_fields', 'restrict_by_profile_tag', $form_state->getValue('restrict_by_profile_tag'));
+  
+
   $webform->save();
 }
 

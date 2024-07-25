@@ -9,74 +9,119 @@ function webform_custom_fields_form_alter(&$form, FormStateInterface $form_state
   if ($form_id == 'webform_settings_form' || $form_id == 'webform_add_form') {
     $webform = $form_state->getFormObject()->getEntity();
 
-    $form['custom_field'] = [
-      '#type' => 'select',
-      '#title' => t('Allow for this form to be attached to a supported user or a profile tag'),
-      '#options' => [
-        'none' => t('None (admin area only)'),
-        'supported_user' => t('Supported user (profile entity)'),
-        'profile_tag' => t('Profile tag (profile tag entity)'),
-      ],
-      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'custom_field', 'none'),
+     // Field 1: Allow for this form to be attached to a supported user profile
+    $form['allow_supported_user_profile'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Allow for this form to be attached to a supported user profile'),
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'allow_supported_user_profile', FALSE),
       '#weight' => -10,
     ];
 
-    // Checkbox for who can submit this form
-    $form['conditional_checkboxes_submit'] = [
+    // Field 2: Who can submit this form?
+    $form['who_can_submit'] = [
       '#type' => 'checkboxes',
       '#title' => t('Who can submit this form?*'),
       '#options' => [
+        'admins' => t('Admins'),
+        'mentors' => t('Mentors'),
         'supporters' => t('Supporters'),
         'supported_users' => t('Supported users'),
       ],
+      '#default_value' => [
+        'admins' => 'admins',
+        'mentors' => 'mentors',
+      ],
+      '#disabled' =>  [
+          'admins' => TRUE,
+          'mentors' => TRUE,
+          'mentors' => FALSE,
+        ],
       '#states' => [
         'visible' => [
-          [':input[name="custom_field"]' => ['value' => 'supported_user']],
+          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
         ],
       ],
-      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_submit', []),
       '#weight' => -9,
     ];
 
-    // Checkbox for who can view results of this form
-    $form['conditional_checkboxes_view'] = [
+    // Field 3: Who can view results of this form?
+    $form['who_can_view'] = [
       '#type' => 'checkboxes',
       '#title' => t('Who can view results of this form?*'),
       '#options' => [
+        'admins' => t('Admins'),
+        'mentors' => t('Mentors'),
         'supporters' => t('Supporters'),
         'supported_users' => t('Supported users'),
       ],
+      '#default_value' => [
+        'admins' => 'admins',
+        'mentors' => 'mentors',
+      ],
+      '#disabled' => TRUE,
       '#states' => [
         'visible' => [
-          [':input[name="custom_field"]' => ['value' => 'supported_user']],
-          [':input[name="custom_field"]' => ['value' => 'profile_tag']],
+          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
         ],
       ],
-      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_view', []),
       '#weight' => -8,
     ];
 
-    // Checkbox for who can edit results of this form
-    $form['conditional_checkboxes_edit'] = [
+    // Field 4: Who can edit results of this form?
+    $form['who_can_edit'] = [
       '#type' => 'checkboxes',
-      '#title' => t('Who can edit results of this form?*'),
+      '#title' => t('Who can edit results of this form?'),
       '#options' => [
+        'admins' => t('Admins'),
+        'mentors' => t('Mentors'),
         'supporters' => t('Supporters'),
         'supported_users' => t('Supported users'),
       ],
+      '#default_value' => [
+        'admins' => 'admins',
+        'mentors' => 'mentors',
+      ],
+      '#disabled' => TRUE,
       '#states' => [
         'visible' => [
-          [':input[name="custom_field"]' => ['value' => 'supported_user']],
-          [':input[name="custom_field"]' => ['value' => 'profile_tag']],
+          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
         ],
       ],
-      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'conditional_checkboxes_edit', []),
       '#weight' => -7,
     ];
 
+    // Field 5: Restrict by profile tag
+    $form['restrict_by_profile_tag'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Restrict by profile tag'),
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'restrict_by_profile_tag', FALSE),
+      '#states' => [
+        'visible' => [
+          ':input[name="allow_supported_user_profile"]' => ['checked' => TRUE],
+        ],
+      ],
+      '#weight' => -6,
+    ];
+
+    // Field 6: Select Profile tags
+    $form['select_profile_tags'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'profile_tag',
+      '#tags' => TRUE,
+      '#title' => t('Select Profile tags'),
+      '#default_value' => $webform->getThirdPartySetting('webform_custom_fields', 'select_profile_tags', []),
+      '#states' => [
+        'visible' => [
+          ':input[name="restrict_by_profile_tag"]' => ['checked' => TRUE],
+        ],
+      ],
+      '#weight' => -5,
+    ];
 
     $form['actions']['submit']['#submit'][] = 'webform_custom_fields_form_submit';
-  }
+
+
+   }
 }
 
 /**
